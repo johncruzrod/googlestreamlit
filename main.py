@@ -1,19 +1,21 @@
 import streamlit as st
 from google.oauth2 import service_account
+from vertexai import VertexAI
 from vertexai.generative_models import GenerativeModel
+import vertexai.preview.generative_models as generative_models
 
 # Load the service account credentials from Streamlit secrets
 service_account_info = {
-    "type": st.secrets["gcp_service_account"]["type"],
-    "project_id": st.secrets["gcp_service_account"]["project_id"],
-    "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
-    "private_key": st.secrets["gcp_service_account"]["private_key"],
-    "client_email": st.secrets["gcp_service_account"]["client_email"],
-    "client_id": st.secrets["gcp_service_account"]["client_id"],
-    "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
-    "token_uri": st.secrets["gcp_service_account"]["token_uri"],
-    "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
-    "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"]
+    "type": st.secrets["gcp"]["type"],
+    "project_id": st.secrets["gcp"]["project_id"],
+    "private_key_id": st.secrets["gcp"]["private_key_id"],
+    "private_key": st.secrets["gcp"]["private_key"],
+    "client_email": st.secrets["gcp"]["client_email"],
+    "client_id": st.secrets["gcp"]["client_id"],
+    "auth_uri": st.secrets["gcp"]["auth_uri"],
+    "token_uri": st.secrets["gcp"]["token_uri"],
+    "auth_provider_x509_cert_url": st.secrets["gcp"]["auth_provider_x509_cert_url"],
+    "client_x509_cert_url": st.secrets["gcp"]["client_x509_cert_url"]
 }
 
 # Create credentials object from the service account info
@@ -29,18 +31,36 @@ text_input = st.text_input("Enter your text:")
 if st.button("Generate Text"):
     if text_input:
         try:
-            # Initialize the Vertex AI client with the credentials
-            GenerativeModel.init(project=service_account_info["project_id"], credentials=credentials)
+            # Initialize the Vertex AI SDK with the credentials
+            VertexAI.init(project=service_account_info["project_id"], location="us-central1", credentials=credentials)
 
             # Load the model
-            model = GenerativeModel("gemini-1.5-pro")
+            model = GenerativeModel("gemini-1.5-pro-preview-0409")
 
-            # Query the model with the user input
-            response = model.predict(text_input)
+            # Set up the generation configuration
+            generation_config = {
+                "max_output_tokens": 8192,
+                "temperature": 1,
+                "top_p": 0.95,
+            }
+
+            # Set up the safety settings
+            safety_settings = {
+                generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            }
+
+            # Start a chat with the model
+            chat = model.start_chat()
+
+            # Generate text using the model
+            response = chat.generate_response(text_input, generation_config=generation_config, safety_settings=safety_settings)
 
             # Display the generated text
             st.success("Generated Text:")
-            st.write(response.text)
+            st.write(response.candidates[0].output)
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
