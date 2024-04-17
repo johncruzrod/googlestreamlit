@@ -13,7 +13,7 @@ client_options = ClientOptions(api_endpoint="us-central1-aiplatform.googleapis.c
                                api_key=api_key)
 
 # Initialize Vertex AI (replace with your project ID)
-project_id = "test-document-ai-api-411410"  # Replace with your actual project ID
+project_id = "ertex-ai-420610"  # Replace with your actual project ID
 vertexai.init(project=project_id, location="us-central1", client_options=client_options)
 
 # Load the Gemini 1.5 Pro model
@@ -27,7 +27,7 @@ def process_text(prompt):
 # Function to process file input (image, video, PDF)
 def process_file(file_uploader, mime_type):
     if file_uploader is not None:
-        file_content = Part.from_file_uploader(file_uploader, mime_type)
+        file_content = Part.from_bytes(file_uploader.read(), mime_type=mime_type)
         prompt = st.text_input("Enter your prompt:")
         if prompt:
             contents = [file_content, prompt]
