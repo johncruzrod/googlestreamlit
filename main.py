@@ -10,7 +10,7 @@ api_key = st.secrets["gcp_api_key"]
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = api_key
 
 # Initialize Vertex AI (replace with your project ID)
-project_id = "YOUR_PROJECT_ID"  # Replace with your actual project ID
+project_id = "test-document-ai-api-411410"  # Replace with your actual project ID
 vertexai.init(project=project_id, location="us-central1")
 
 # Load the Gemini 1.5 Pro model
