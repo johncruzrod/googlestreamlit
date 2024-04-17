@@ -63,7 +63,7 @@ if st.button("Generate Text"):
             # Display the generated text
             st.success("Generated Text:")
             for response in responses:
-                st.write(response.text, end="")
+                st.text(response.text, end="")
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
