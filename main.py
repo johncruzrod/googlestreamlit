@@ -6,9 +6,6 @@ from vertexai.generative_models import GenerativeModel, Part
 # Get the API key from Streamlit secrets
 api_key = st.secrets["gcp_api_key"]
 
-# Set the environment variable using the retrieved API key
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = api_key
-
 # Initialize Vertex AI (replace with your project ID)
 project_id = "test-document-ai-api-411410"  # Replace with your actual project ID
 vertexai.init(project=project_id, location="us-central1")
