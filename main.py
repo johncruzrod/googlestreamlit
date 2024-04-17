@@ -1,7 +1,7 @@
 import streamlit as st
 from google.oauth2 import service_account
 import vertexai
-from vertexai.generative_models import GenerativeModel
+from vertexai.generative_models import GenerativeModel, Part, FinishReason
 import vertexai.preview.generative_models as generative_models
 
 # Load the service account credentials from Streamlit secrets
@@ -52,15 +52,18 @@ if st.button("Generate Text"):
                 generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
             }
 
-            # Start a chat with the model
-            chat = model.start_chat()
-
             # Generate text using the model
-            response = chat.generate_message(text_input, generation_config=generation_config, safety_settings=safety_settings)
+            responses = model.generate_content(
+                [Part(text=text_input)],
+                generation_config=generation_config,
+                safety_settings=safety_settings,
+                stream=True,
+            )
 
             # Display the generated text
             st.success("Generated Text:")
-            st.write(response.text)
+            for response in responses:
+                st.write(response.text, end="")
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
