@@ -32,7 +32,7 @@ if st.button("Generate Text"):
     if text_input:
         try:
             # Initialize the Vertex AI SDK with the credentials
-            VertexAI.init(project=service_account_info["project_id"], location="us-central1", credentials=credentials)
+            vertexai.init(project=service_account_info["project_id"], location="us-central1", credentials=credentials)
 
             # Load the model
             model = GenerativeModel("gemini-1.5-pro-preview-0409")
