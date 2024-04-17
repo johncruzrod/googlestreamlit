@@ -9,11 +9,10 @@ api_key = st.secrets["gcp_api_key"]
 
 # Create client options with the API key
 client_options = ClientOptions(api_endpoint="us-central1-aiplatform.googleapis.com",
-                               credentials=default()[0],  # Get Application Default Credentials
                                api_key=api_key)
 
 # Initialize Vertex AI (replace with your project ID)
-project_id = "ertex-ai-420610"  # Replace with your actual project ID
+project_id = "vertex-ai-420610"
 vertexai.init(project=project_id, location="us-central1", client_options=client_options)
 
 # Load the Gemini 1.5 Pro model
