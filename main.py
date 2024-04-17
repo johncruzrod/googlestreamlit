@@ -54,7 +54,7 @@ if st.button("Generate Text"):
 
             # Generate text using the model
             responses = model.generate_content(
-                [Part(text=text_input)],
+                [Part.from_text(text_input)],
                 generation_config=generation_config,
                 safety_settings=safety_settings,
                 stream=True,
