@@ -1,14 +1,20 @@
 import streamlit as st
-import os
+from google.auth import default
+from google.api_core.client_options import ClientOptions
 import vertexai
 from vertexai.generative_models import GenerativeModel, Part
 
 # Get the API key from Streamlit secrets
 api_key = st.secrets["gcp_api_key"]
 
+# Create client options with the API key
+client_options = ClientOptions(api_endpoint="us-central1-aiplatform.googleapis.com",
+                               credentials=default()[0],  # Get Application Default Credentials
+                               api_key=api_key)
+
 # Initialize Vertex AI (replace with your project ID)
-project_id = "vertex-ai-420610"  # Replace with your actual project ID
-vertexai.init(project=project_id, location="us-central1")
+project_id = "test-document-ai-api-411410"  # Replace with your actual project ID
+vertexai.init(project=project_id, location="us-central1", client_options=client_options)
 
 # Load the Gemini 1.5 Pro model
 model = GenerativeModel("gemini-1.5-pro-preview-0409")
