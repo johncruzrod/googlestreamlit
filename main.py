@@ -1,47 +1,31 @@
 import streamlit as st
-import requests
-import json
+import vertexai
+from vertexai.generative_models import GenerativeModel
+import vertexai.preview.generative_models as generative_models
+from google.oauth2 import service_account
+import google.auth.transport.requests
 
-# Load secrets
-project_id = st.secrets["project_id"]
-api_key = st.secrets["api_key"]
-region = st.secrets["region"]
+def get_credentials():
+    # Retrieve secrets from Streamlit's secret storage
+    info = st.secrets["gcp"]
+    credentials = service_account.Credentials.from_service_account_info(info)
+    return credentials
 
-# API setup
-endpoint = f"https://{region}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{region}/publishers/google/models/gemini-1.0-pro:streamGenerateContent"
+def multiturn_generate_content(user_input):
+    credentials = get_credentials()
+    # Use the credentials to authenticate the Vertex AI session
+    vertexai.init(project=st.secrets["gcp"]["project_id"], location="us-central1", credentials=credentials)
+    model = GenerativeModel("gemini-1.5-pro-preview-0409")
+    chat = model.start_chat()
 
-headers = {
-    "Authorization": f"Bearer {api_key}",
-    "Content-Type": "application/json"
-}
+    # Assuming there's a way to send input and receive output, adjust according to actual API
+    chat.send(user_input)
+    response = chat.receive()
 
-st.title('Simple Streamlit Gemini API Tester')
+    return response
 
-# User input
+st.title('Vertex AI API Tester with Streamlit')
 user_input = st.text_input("Enter your text prompt:", "Hello, world!")
-
 if st.button('Send Prompt'):
-    # Construct the request body
-    data = {
-        "contents": {
-            "role": "user",
-            "parts": [{"text": user_input}]
-        },
-        "generation_config": {
-            "temperature": 0.2,
-            "topP": 0.8,
-            "topK": 40
-        }
-    }
-    
-    # Send POST request to the API
-    response = requests.post(endpoint, headers=headers, data=json.dumps(data))
-    
-    if response.status_code == 200:
-        # Parse the response
-        result = response.json()
-        st.write("Response from API:")
-        st.json(result)
-    else:
-        st.error(f"Failed to retrieve data: {response.status_code}")
-
+    response = multiturn_generate_content(user_input)
+    st.write(response)
