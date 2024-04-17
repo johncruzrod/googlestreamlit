@@ -5,6 +5,7 @@ import json
 # Load secrets
 project_id = st.secrets["project_id"]
 api_key = st.secrets["api_key"]
+region = st.secrets["region"]
 
 # API setup
 endpoint = f"https://{region}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{region}/publishers/google/models/gemini-1.0-pro:streamGenerateContent"
