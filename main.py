@@ -52,20 +52,19 @@ if st.button("Generate Text"):
                 generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
             }
 
-            # Generate text using the model
-            responses = model.generate_content(
+            # Generate text using the model and accumulate responses in a list
+            responses = []
+            for response in model.generate_content(
                 [Part.from_text(text_input)],
                 generation_config=generation_config,
                 safety_settings=safety_settings,
                 stream=True,
-            )
+            ):
+                responses.append(response.text)
 
-            # Display the generated text
+            # Display the generated text as one block
             st.success("Generated Text:")
-            generated_text = ""
-            for response in responses:
-                generated_text += response.text
-            st.text(generated_text)  # Use st.text instead of st.write
+            st.write("".join(responses))  # Join the responses into a single string
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
