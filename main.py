@@ -1,31 +1,48 @@
 import streamlit as st
-import vertexai
-from vertexai.generative_models import GenerativeModel
-import vertexai.preview.generative_models as generative_models
 from google.oauth2 import service_account
-import google.auth.transport.requests
+from vertexai.generative_models import GenerativeModel
 
-def get_credentials():
-    # Retrieve secrets from Streamlit's secret storage
-    info = st.secrets["gcp"]
-    credentials = service_account.Credentials.from_service_account_info(info)
-    return credentials
+# Load the service account credentials from Streamlit secrets
+service_account_info = {
+    "type": st.secrets["gcp_service_account"]["type"],
+    "project_id": st.secrets["gcp_service_account"]["project_id"],
+    "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
+    "private_key": st.secrets["gcp_service_account"]["private_key"],
+    "client_email": st.secrets["gcp_service_account"]["client_email"],
+    "client_id": st.secrets["gcp_service_account"]["client_id"],
+    "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
+    "token_uri": st.secrets["gcp_service_account"]["token_uri"],
+    "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
+    "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"]
+}
 
-def multiturn_generate_content(user_input):
-    credentials = get_credentials()
-    # Use the credentials to authenticate the Vertex AI session
-    vertexai.init(project=st.secrets["gcp"]["project_id"], location="us-central1", credentials=credentials)
-    model = GenerativeModel("gemini-1.5-pro-preview-0409")
-    chat = model.start_chat()
+# Create credentials object from the service account info
+credentials = service_account.Credentials.from_service_account_info(service_account_info)
 
-    # Assuming there's a way to send input and receive output, adjust according to actual API
-    chat.send(user_input)
-    response = chat.receive()
+# Set up the Streamlit app
+st.title("Vertex AI Text Generation")
 
-    return response
+# Get the user input
+text_input = st.text_input("Enter your text:")
 
-st.title('Vertex AI API Tester with Streamlit')
-user_input = st.text_input("Enter your text prompt:", "Hello, world!")
-if st.button('Send Prompt'):
-    response = multiturn_generate_content(user_input)
-    st.write(response)
+# Generate text when the user clicks the button
+if st.button("Generate Text"):
+    if text_input:
+        try:
+            # Initialize the Vertex AI client with the credentials
+            GenerativeModel.init(project=service_account_info["project_id"], credentials=credentials)
+
+            # Load the model
+            model = GenerativeModel("gemini-1.5-pro")
+
+            # Query the model with the user input
+            response = model.predict(text_input)
+
+            # Display the generated text
+            st.success("Generated Text:")
+            st.write(response.text)
+
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+    else:
+        st.warning("Please enter some text.")
