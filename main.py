@@ -56,11 +56,11 @@ if st.button("Generate Text"):
             chat = model.start_chat()
 
             # Generate text using the model
-            response = chat.generate_response(text_input, generation_config=generation_config, safety_settings=safety_settings)
+            response = chat.generate_message(text_input, generation_config=generation_config, safety_settings=safety_settings)
 
             # Display the generated text
             st.success("Generated Text:")
-            st.write(response.candidates[0].output)
+            st.write(response.text)
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
