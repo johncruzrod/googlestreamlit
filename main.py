@@ -7,7 +7,7 @@ from vertexai.generative_models import GenerativeModel, Part
 api_key = st.secrets["gcp_api_key"]
 
 # Initialize Vertex AI (replace with your project ID)
-project_id = "test-document-ai-api-411410"  # Replace with your actual project ID
+project_id = "vertex-ai-420610"  # Replace with your actual project ID
 vertexai.init(project=project_id, location="us-central1")
 
 # Load the Gemini 1.5 Pro model
