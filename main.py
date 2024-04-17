@@ -1,61 +1,46 @@
 import streamlit as st
-from google.auth import default
-from google.api_core.client_options import ClientOptions
-import vertexai
-from vertexai.generative_models import GenerativeModel, Part
+import requests
+import json
 
-# Get the API key from Streamlit secrets
-api_key = st.secrets["gcp_api_key"]
+# Load secrets
+project_id = st.secrets["project_id"]
+api_key = st.secrets["api_key"]
 
-# Create client options with the API key
-client_options = ClientOptions(api_endpoint="us-central1-aiplatform.googleapis.com",
-                               api_key=api_key)
+# API setup
+endpoint = f"https://{region}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{region}/publishers/google/models/gemini-1.0-pro:streamGenerateContent"
 
-# Initialize Vertex AI (replace with your project ID)
-project_id = "vertex-ai-420610"
-vertexai.init(project=project_id, location="us-central1", client_options=client_options)
+headers = {
+    "Authorization": f"Bearer {api_key}",
+    "Content-Type": "application/json"
+}
 
-# Load the Gemini 1.5 Pro model
-model = GenerativeModel("gemini-1.5-pro-preview-0409")
+st.title('Simple Streamlit Gemini API Tester')
 
-# Function to process text input
-def process_text(prompt):
-    response = model.generate_content([prompt])
-    st.write(response.text)
+# User input
+user_input = st.text_input("Enter your text prompt:", "Hello, world!")
 
-# Function to process file input (image, video, PDF)
-def process_file(file_uploader, mime_type):
-    if file_uploader is not None:
-        file_content = Part.from_bytes(file_uploader.read(), mime_type=mime_type)
-        prompt = st.text_input("Enter your prompt:")
-        if prompt:
-            contents = [file_content, prompt]
-            response = model.generate_content(contents)
-            st.write(response.text)
+if st.button('Send Prompt'):
+    # Construct the request body
+    data = {
+        "contents": {
+            "role": "user",
+            "parts": [{"text": user_input}]
+        },
+        "generation_config": {
+            "temperature": 0.2,
+            "topP": 0.8,
+            "topK": 40
+        }
+    }
+    
+    # Send POST request to the API
+    response = requests.post(endpoint, headers=headers, data=json.dumps(data))
+    
+    if response.status_code == 200:
+        # Parse the response
+        result = response.json()
+        st.write("Response from API:")
+        st.json(result)
+    else:
+        st.error(f"Failed to retrieve data: {response.status_code}")
 
-# Streamlit App
-st.title("Gemini 1.5 Pro Interaction")
-
-# Text input section
-st.header("Text Input")
-text_prompt = st.text_area("Enter your text prompt:", height=100)
-if st.button("Submit Text"):
-    process_text(text_prompt)
-
-# File input sections
-st.header("File Input")
-
-# Image input
-st.subheader("Image")
-image_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-process_file(image_file, "image/jpeg")
-
-# Video input
-st.subheader("Video")
-video_file = st.file_uploader("Upload a video", type=["mp4"])
-process_file(video_file, "video/mp4")
-
-# PDF input
-st.subheader("PDF")
-pdf_file = st.file_uploader("Upload a PDF", type=["pdf"])
-process_file(pdf_file, "application/pdf")
