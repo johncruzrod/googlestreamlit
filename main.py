@@ -68,7 +68,6 @@ def generate_content(file_content, file_name, prompt, system_prompt):
     )
     return response.candidates[0].content.parts[0].text  # Extract text output
 
-
 # Streamlit App
 st.title("Vertex AI Generative Model Demo")
 
@@ -78,5 +77,5 @@ if uploaded_file is not None:
     file_name = uploaded_file.name
     prompt = st.text_input("Enter your prompt:")  # Single user prompt
     if st.button("Generate Content"):
-        generated_content = generate_content(file_content, file_name, prompt)
+        generated_content = generate_content(file_content, file_name, prompt, system_prompt)  # Pass system_prompt here
         st.write(generated_content)
