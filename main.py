@@ -1,23 +1,23 @@
 import streamlit as st
 import os
 import base64
-from google.oauth2 import service_account  # Add this import
+from google.oauth2 import service_account
 import vertexai
 from vertexai.generative_models import GenerativeModel, Part
 import vertexai.preview.generative_models as generative_models
 
 # Load the service account credentials from Streamlit secrets
 service_account_info = {
-"type": st.secrets["gcp"]["type"],
-"project_id": st.secrets["gcp"]["project_id"],
-"private_key_id": st.secrets["gcp"]["private_key_id"],
-"private_key": st.secrets["gcp"]["private_key"],
-"client_email": st.secrets["gcp"]["client_email"],
-"client_id": st.secrets["gcp"]["client_id"],
-"auth_uri": st.secrets["gcp"]["auth_uri"],
-"token_uri": st.secrets["gcp"]["token_uri"],
-"auth_provider_x509_cert_url": st.secrets["gcp"]["auth_provider_x509_cert_url"],
-"client_x509_cert_url": st.secrets["gcp"]["client_x509_cert_url"]
+    "type": st.secrets["gcp"]["type"],
+    "project_id": st.secrets["gcp"]["project_id"],
+    "private_key_id": st.secrets["gcp"]["private_key_id"],
+    "private_key": st.secrets["gcp"]["private_key"],
+    "client_email": st.secrets["gcp"]["client_email"],
+    "client_id": st.secrets["gcp"]["client_id"],
+    "auth_uri": st.secrets["gcp"]["auth_uri"],
+    "token_uri": st.secrets["gcp"]["token_uri"],
+    "auth_provider_x509_cert_url": st.secrets["gcp"]["auth_provider_x509_cert_url"],
+    "client_x509_cert_url": st.secrets["gcp"]["client_x509_cert_url"]
 }
 
 # Authenticate with Vertex AI
@@ -26,8 +26,11 @@ credentials = service_account.Credentials.from_service_account_info(
 )
 vertexai.init(project=service_account_info["project_id"], credentials=credentials)
 
+# Hardcoded system prompt
+system_prompt = Part.from_text("You are a helpful and informative AI assistant.")
+
 # Function to generate content
-def generate_content(file_content, file_name, prompt):
+def generate_content(file_content, file_name, prompt, system_prompt):
     mime_type = None
     if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
         mime_type = "image/jpeg"
@@ -59,11 +62,12 @@ def generate_content(file_content, file_name, prompt):
     }
     chat = model.start_chat()
     response = chat.send_message(
-        [file_part, prompt],
+        [system_prompt, file_part, prompt],  # Include hardcoded system prompt
         generation_config=generation_config,
         safety_settings=safety_settings
     )
-    return response
+    return response.candidates[0].content.parts[0].text  # Extract text output
+
 
 # Streamlit App
 st.title("Vertex AI Generative Model Demo")
@@ -72,7 +76,7 @@ uploaded_file = st.file_uploader("Choose a file", type=["jpg", "jpeg", "png", "m
 if uploaded_file is not None:
     file_content = uploaded_file.read()
     file_name = uploaded_file.name
-    prompt = st.text_input("Enter your prompt:")
+    prompt = st.text_input("Enter your prompt:")  # Single user prompt
     if st.button("Generate Content"):
         generated_content = generate_content(file_content, file_name, prompt)
         st.write(generated_content)
