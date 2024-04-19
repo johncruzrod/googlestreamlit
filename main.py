@@ -49,8 +49,7 @@ if st.button("Generate"):
                 part = Part.from_file(uploaded_file, mime_type=file_type)
             else:
                 st.error("Unsupported file type. Please upload an image, audio, video, or PDF file.")
-                return
-
+            
             # Generate content
             responses = []
             for response in model.generate_content(
