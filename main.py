@@ -19,9 +19,9 @@ service_account_info = {
 }
 
 # Create credentials object from the service account info
-credentials = service_account.Credentials.from_service_account_info(service_account_info) 
+credentials = service_account.Credentials.from_service_account_info(service_account_info)
 
-# Set up Streamlit app
+# Set up the Streamlit app
 st.title("Vertex AI Multimodal Generation with Gemini 1.5 Pro")
 
 # File uploader
@@ -41,18 +41,18 @@ if st.button("Generate"):
             model = GenerativeModel("gemini-1.5-pro-preview-0409")
 
             # Determine file type and create Part object
-              file_type = uploaded_file.type
-              if file_type.startswith("image"):
-                part = Part.create_from_file(uploaded_file, mime_type=file_type)  # Use create_from_file
-              elif file_type.startswith("audio"):
-                part = Part.create_from_file(uploaded_file, mime_type=file_type)  # Use create_from_file
-              elif file_type.startswith("video"):
-                part = Part.create_from_file(uploaded_file, mime_type=file_type)  # Use create_from_file 
-              elif file_type == "application/pdf":
-                part = Part.create_from_file(uploaded_file, mime_type=file_type)  # Use create_from_file
-              else:
+            file_type = uploaded_file.type
+            if file_type.startswith("image"):
+                part = Part.create_from_file(uploaded_file, mime_type=file_type)
+            elif file_type.startswith("audio"):
+                part = Part.create_from_file(uploaded_file, mime_type=file_type)
+            elif file_type.startswith("video"):
+                part = Part.create_from_file(uploaded_file, mime_type=file_type)
+            elif file_type == "application/pdf":
+                part = Part.create_from_file(uploaded_file, mime_type=file_type)
+            else:
                 st.error("Unsupported file type. Please upload an image, audio, video, or PDF file.")
-            
+
             # Generate content
             responses = []
             for response in model.generate_content(
