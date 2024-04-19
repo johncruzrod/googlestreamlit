@@ -65,12 +65,6 @@ if st.button("Generate"):
             else:
                 st.error("Unsupported file type. Please upload an image, audio, video, or PDF file.")
                 return
-
-            # Create Part object from file uploader (try both methods)
-            try:
-                part = Part.from_file_uploader(uploaded_file)
-            except AttributeError:
-                part = Part.from_file_uploader(file_bytes)
             
             # Generate content (non-streaming)
             response = model.generate_content(
