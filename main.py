@@ -29,26 +29,25 @@ vertexai.init(project=service_account_info["project_id"], credentials=credential
 # Hardcoded system prompt
 system_prompt = Part.from_text("You are a helpful and informative AI assistant.")
 
-# Function to generate content
-def generate_content(file_content, file_name, prompt, system_prompt):
-    mime_type = None
-    if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
-        mime_type = "image/jpeg"
-    elif file_name.lower().endswith('.mp4'):
-        mime_type = "video/mp4"
-    elif file_name.lower().endswith('.pdf'):
-        mime_type = "application/pdf"
-    elif file_name.lower().endswith(('.mp3', '.wav')):
-        mime_type = "audio/mpeg"
-    if mime_type is None:
-        raise ValueError("Unsupported file type")
+# Function to generate content (modified for multiple files)
+def generate_content(file_contents, file_names, prompt, system_prompt):
+    file_parts = []
+    for file_content, file_name in zip(file_contents, file_names):
+        mime_type = None
+        if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
+            mime_type = "image/jpeg"
+        elif file_name.lower().endswith('.mp4'):
+            mime_type = "video/mp4"
+        elif file_name.lower().endswith('.pdf'):
+            mime_type = "application/pdf"
+        elif file_name.lower().endswith(('.mp3', '.wav')):
+            mime_type = "audio/mpeg"
+        if mime_type is None:
+            raise ValueError("Unsupported file type")
 
-    file_part = Part.from_data(
-        mime_type=mime_type,
-        data=file_content
-    )
+        file_parts.append(Part.from_data(mime_type=mime_type, data=file_content))
 
-    model = GenerativeModel("gemini-1.5-pro-preview-0409")
+    model = GenerativeModel("gemini-1.5-pro-preview-0409")  # Replace with your model name
     generation_config = {
         "max_output_tokens": 8192,
         "temperature": 1,
@@ -62,21 +61,21 @@ def generate_content(file_content, file_name, prompt, system_prompt):
     }
     chat = model.start_chat()
     response = chat.send_message(
-        [system_prompt, file_part, prompt],  # Include hardcoded system prompt
+        [system_prompt, *file_parts, prompt],  # Include files and prompt
         generation_config=generation_config,
         safety_settings=safety_settings
     )
     return response.candidates[0].content.parts[0].text  # Extract text output
 
-# Streamlit App
-st.title("Gemini 1.5 Demo - Chat with Files")
+# Streamlit App (modified)
+st.title("Gemini 1.5 Demo - Chat with Multiple Files")
 
-uploaded_file = st.file_uploader("Choose a file", type=["jpg", "jpeg", "png", "mp4", "pdf", "mp3", "wav"])
-if uploaded_file is not None:
-    file_content = uploaded_file.read()
-    file_name = uploaded_file.name
+uploaded_files = st.file_uploader("Choose files", type=["jpg", "jpeg", "png", "mp4", "pdf", "mp3", "wav"], accept_multiple_files=True)
+if uploaded_files:
+    file_contents = [file.read() for file in uploaded_files]
+    file_names = [file.name for file in uploaded_files]
     prompt = st.text_input("Enter your prompt:")
     if st.button("Generate Content"):
-        with st.spinner('Generating content...'):  # Add spinner here
-            generated_content = generate_content(file_content, file_name, prompt, system_prompt)
+        with st.spinner('Generating content...'):
+            generated_content = generate_content(file_contents, file_names, prompt, system_prompt)
         st.write(generated_content)
