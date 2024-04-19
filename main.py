@@ -18,6 +18,9 @@ service_account_info = {
     "client_x509_cert_url": st.secrets["gcp"]["client_x509_cert_url"]
 }
 
+# Create credentials object from the service account info
+credentials = service_account.Credentials.from_service_account_info(service_account_info) 
+
 # Set up Streamlit app
 st.title("Vertex AI Multimodal Generation with Gemini 1.5 Pro")
 
