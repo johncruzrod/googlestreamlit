@@ -18,18 +18,18 @@ service_account_info = {
     "client_x509_cert_url": st.secrets["gcp"]["client_x509_cert_url"]
 }
 
-# Create credentials object from the service account info
-credentials = service_account.Credentials.from_service_account_info(service_account_info)
+# Set up Streamlit app
+st.title("Vertex AI Multimodal Generation with Gemini 1.5 Pro")
 
-# Set up the Streamlit app
-st.title("Vertex AI Text Generation")
+# File uploader
+uploaded_file = st.file_uploader("Upload your file", type=["png", "jpg", "jpeg", "mp3", "wav", "mp4", "pdf"])
 
-# Get the user input
-text_input = st.text_input("Enter your text:")
+# Text prompt input
+text_input = st.text_area("Enter your text prompt:")
 
-# Generate text when the user clicks the button
-if st.button("Generate Text"):
-    if text_input:
+# Generate button
+if st.button("Generate"):
+    if uploaded_file and text_input:
         try:
             # Initialize the Vertex AI SDK with the credentials
             vertexai.init(project=service_account_info["project_id"], location="us-central1", credentials=credentials)
@@ -37,36 +37,40 @@ if st.button("Generate Text"):
             # Load the model
             model = GenerativeModel("gemini-1.5-pro-preview-0409")
 
-            # Set up the generation configuration
-            generation_config = {
-                "max_output_tokens": 8192,
-                "temperature": 1,
-                "top_p": 0.95,
-            }
+            # Determine file type and create Part object
+            file_type = uploaded_file.type
+            if file_type.startswith("image"):
+                part = Part.from_file(uploaded_file, mime_type=file_type)
+            elif file_type.startswith("audio"):
+                part = Part.from_file(uploaded_file, mime_type=file_type)
+            elif file_type.startswith("video"):
+                part = Part.from_file(uploaded_file, mime_type=file_type)
+            elif file_type == "application/pdf":
+                part = Part.from_file(uploaded_file, mime_type=file_type)
+            else:
+                st.error("Unsupported file type. Please upload an image, audio, video, or PDF file.")
+                return
 
-            # Set up the safety settings
-            safety_settings = {
-                generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
-                generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
-                generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
-                generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
-            }
-
-            # Generate text using the model and accumulate responses in a list
+            # Generate content
             responses = []
             for response in model.generate_content(
-                [Part.from_text(text_input)],
-                generation_config=generation_config,
-                safety_settings=safety_settings,
+                [part, Part.from_text(text_input)],
+                generation_config={"max_output_tokens": 8192, "temperature": 1, "top_p": 0.95},
+                safety_settings={
+                    generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                },
                 stream=True,
             ):
                 responses.append(response.text)
 
-            # Display the generated text as one block
+            # Display generated text
             st.success("Generated Text:")
-            st.write("".join(responses))  # Join the responses into a single string
+            st.write("".join(responses))
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
     else:
-        st.warning("Please enter some text.")
+        st.warning("Please upload a file and provide a text prompt.")
