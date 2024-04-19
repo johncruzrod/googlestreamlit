@@ -1,7 +1,7 @@
 import streamlit as st
 from google.oauth2 import service_account
 import vertexai
-from vertexai.generative_models import GenerativeModel, Part
+from vertexai.preview.generative_models import GenerativeModel, Part  # Corrected import
 
 # Load the service account credentials from Streamlit secrets
 service_account_info = {
@@ -21,7 +21,7 @@ service_account_info = {
 credentials = service_account.Credentials.from_service_account_info(service_account_info)
 
 # Set up the Streamlit app
-st.title("Vertex AI Multimodal Generation with Gemini 1.5 Pro (Debugging)")
+st.title("Vertex AI Multimodal Generation with Gemini 1.5 Pro")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload your file", type=["png", "jpg", "jpeg", "mp3", "wav", "mp4", "pdf"])
@@ -33,39 +33,15 @@ text_input = st.text_area("Enter your text prompt:")
 if st.button("Generate"):
     if uploaded_file and text_input:
         try:
-            st.write("**Debugging Information:**")
-            st.write(f"Uploaded File Type: {type(uploaded_file)}")
-            st.write(f"Uploaded File Name: {uploaded_file.name}")
-            st.write(f"Uploaded File Size: {uploaded_file.size} bytes")
-
-            # Attempt to convert to bytes
-            file_bytes = uploaded_file.getvalue()
-            st.write(f"File Bytes Type: {type(file_bytes)}")
-            st.write(f"File Bytes Length: {len(file_bytes)}")
-
             # Initialize the Vertex AI SDK with the credentials
             vertexai.init(project=service_account_info["project_id"], location="us-central1", credentials=credentials)
 
             # Load the model
             model = GenerativeModel("gemini-1.5-pro-preview-0409")
 
-            # Get file type and data
-            file_type = uploaded_file.type
-            file_data = uploaded_file.read()
+            # Create Part object from file uploader
+            part = Part.from_file_uploader(uploaded_file)  # Using the correct Part class
 
-            # Create Part object based on file type
-            if file_type.startswith("image"):
-                part = Part.from_bytes(file_data, mime_type=file_type)
-            elif file_type.startswith("audio"):
-                part = Part.from_bytes(file_data, mime_type=file_type)
-            elif file_type.startswith("video"):
-                part = Part.from_bytes(file_data, mime_type=file_type)
-            elif file_type == "application/pdf":
-                part = Part.from_bytes(file_data, mime_type=file_type)
-            else:
-                st.error("Unsupported file type. Please upload an image, audio, video, or PDF file.")
-                return
-            
             # Generate content (non-streaming)
             response = model.generate_content(
                 [part, Part.from_text(text_input)],
