@@ -49,6 +49,23 @@ if st.button("Generate"):
             # Load the model
             model = GenerativeModel("gemini-1.5-pro-preview-0409")
 
+            # Get file type and data
+            file_type = uploaded_file.type
+            file_data = uploaded_file.read()
+
+            # Create Part object based on file type
+            if file_type.startswith("image"):
+                part = Part.from_bytes(file_data, mime_type=file_type)
+            elif file_type.startswith("audio"):
+                part = Part.from_bytes(file_data, mime_type=file_type)
+            elif file_type.startswith("video"):
+                part = Part.from_bytes(file_data, mime_type=file_type)
+            elif file_type == "application/pdf":
+                part = Part.from_bytes(file_data, mime_type=file_type)
+            else:
+                st.error("Unsupported file type. Please upload an image, audio, video, or PDF file.")
+                return
+
             # Create Part object from file uploader (try both methods)
             try:
                 part = Part.from_file_uploader(uploaded_file)
