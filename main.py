@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+import base64
 from google.oauth2 import service_account
 import vertexai
 from vertexai.generative_models import GenerativeModel, Part
@@ -19,80 +21,61 @@ service_account_info = {
 }
 
 # Authenticate with Vertex AI
-credentials = service_account.Credentials.from_service_account_info(service_account_info)
-vertexai.init(project=service_account_info["project_id"], location="us-central1", credentials=credentials)
+credentials = service_account.Credentials.from_service_account_info(
+    service_account_info
+)
+vertexai.init(project=service_account_info["project_id"], credentials=credentials)
 
-# Load the Gemini model
-model = GenerativeModel("gemini-1.5-pro-preview-0409")  # Replace with your model name
-
-# System prompt and generation configurations
+# Hardcoded system prompt
 system_prompt = Part.from_text("You are a helpful and informative AI assistant.")
-generation_config = {
-    "max_output_tokens": 8192,
-    "temperature": 1,
-    "top_p": 0.95,
-}
-safety_settings = {
-    generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-}
 
-# Streamlit app title
-st.title("Chat with Gemini and Analyze Files")
-
-# Initialize chat and conversation history
-if "gemini_chat" not in st.session_state:
-    st.session_state.gemini_chat = model.start_chat()
-if "gemini_messages" not in st.session_state:
-    st.session_state.gemini_messages = []
-if "conversation_history" not in st.session_state:
-    st.session_state.conversation_history = []
-
-# File uploader
-uploaded_file = st.file_uploader("Choose a file", type=["jpg", "jpeg", "png", "mp4", "pdf", "mp3", "wav"])
-
-# Chat interface
-user_input = st.text_input("What would you like to ask?")
-
-# Process user input and file upload
-if user_input or uploaded_file:
-    # Add user input to conversation history
-    st.session_state.gemini_messages.append({"role": "user", "content": user_input})
-    st.session_state.conversation_history.append(f"user: {user_input}")
-
-    # Handle file upload
+# Function to generate content (modified for multiple files)
+def generate_content(file_contents, file_names, prompt, system_prompt):
     file_parts = []
-    if uploaded_file:
+    for file_content, file_name in zip(file_contents, file_names):
         mime_type = None
-        if uploaded_file.name.lower().endswith((".jpg", ".jpeg", ".png")):
+        if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
             mime_type = "image/jpeg"
-        elif uploaded_file.name.lower().endswith(".mp4"):
+        elif file_name.lower().endswith('.mp4'):
             mime_type = "video/mp4"
-        # ... (Add more MIME types as needed)
+        elif file_name.lower().endswith('.pdf'):
+            mime_type = "application/pdf"
+        elif file_name.lower().endswith(('.mp3', '.wav')):
+            mime_type = "audio/mpeg"
         if mime_type is None:
-            st.error("Unsupported file type")
-        else:
-            file_parts.append(Part.from_data(mime_type=mime_type, data=uploaded_file.read()))
+            raise ValueError("Unsupported file type")
 
-    # Generate response from Gemini
-    with st.spinner("Waiting for the assistant to respond..."):
-        response = st.session_state.gemini_chat.send_message(
-            [system_prompt, *file_parts, Part.from_text(user_input)],
-            generation_config=generation_config,
-            safety_settings=safety_settings
-        )
+        file_parts.append(Part.from_data(mime_type=mime_type, data=file_content))
 
-        # Display response
-        if isinstance(response, str):
-            st.error(response)
-        else:
-            response_text = response.text
-            st.session_state.gemini_messages.append({"role": "assistant", "content": response_text})
-            st.session_state.conversation_history.append(f"assistant: {response_text}")
+    model = GenerativeModel("gemini-1.5-pro-preview-0409")  # Replace with your model name
+    generation_config = {
+        "max_output_tokens": 8192,
+        "temperature": 1,
+        "top_p": 0.95,
+    }
+    safety_settings = {
+        generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    }
+    chat = model.start_chat()
+    response = chat.send_message(
+        [system_prompt, *file_parts, prompt],  # Include files and prompt
+        generation_config=generation_config,
+        safety_settings=safety_settings
+    )
+    return response.candidates[0].content.parts[0].text  # Extract text output
 
-# Display the conversation history
-for message in st.session_state.gemini_messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+# Streamlit App (modified)
+st.title("Gemini 1.5 Demo - Chat with Multiple Files")
+
+uploaded_files = st.file_uploader("Choose files", type=["jpg", "jpeg", "png", "mp4", "pdf", "mp3", "wav"], accept_multiple_files=True)
+if uploaded_files:
+    file_contents = [file.read() for file in uploaded_files]
+    file_names = [file.name for file in uploaded_files]
+    prompt = st.text_input("Enter your prompt:")
+    if st.button("Generate Content"):
+        with st.spinner('Generating content...'):
+            generated_content = generate_content(file_contents, file_names, prompt, system_prompt)
+        st.write(generated_content)
